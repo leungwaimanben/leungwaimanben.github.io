@@ -20,6 +20,8 @@
         <a-assets>
             <a-asset-item id="animated-asset-1" src="assets/asset.glb"></a-asset-item>
             <a-asset-item id="animated-asset-2" src="assets/asset2.glb"></a-asset-item>
+			<a-asset-item id="animated-asset-3" src="assets/asset3.glb"></a-asset-item>
+			<a-asset-item id="animated-asset-4" src="assets/asset4.glb"></a-asset-item>
         </a-assets>
 
         <!-- First Marker -->
@@ -61,7 +63,44 @@
                 gesture-handler
             ></a-entity>
         </a-marker>
+		
+		<a-marker
+            id="animated-marker-3"
+            type="pattern"
+            preset="custom"
+            url="assets/marker3.patt"
+            raycaster="objects: .clickable"
+            emitevents="true"
+            cursor="fuse: false; rayOrigin: mouse;"
+        >
+            <a-entity
+                id="bowser-model-3"
+                scale="1.04 1.04 1.04"
+                animation-mixer="loop: repeat"
+                gltf-model="#animated-asset-3"
+                class="clickable"
+                gesture-handler
+            ></a-entity>
+        </a-marker>
 
+		<a-marker
+            id="animated-marker-4"
+            type="pattern"
+            preset="custom"
+            url="assets/marker4.patt"
+            raycaster="objects: .clickable"
+            emitevents="true"
+            cursor="fuse: false; rayOrigin: mouse;"
+        >
+            <a-entity
+                id="bowser-model-4"
+                scale="1.04 1.04 1.04"
+                animation-mixer="loop: repeat"
+                gltf-model="#animated-asset-4"
+                class="clickable"
+                gesture-handler
+            ></a-entity>
+        </a-marker>
         <a-entity camera></a-entity>
     </a-scene>
 </body>
