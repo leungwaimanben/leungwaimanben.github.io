@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中國皮影戲遊戲</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.19.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0"></script>
+    <style>
+        :root {
+            --primary-color: #5D5CDE;
+            --bg-light: #FFFFFF;
+            --bg-dark: #181818;
+            --text-light: #333333;
+            --text-dark: #F5F5F5;
+            --puppet-color: #FF3A36;
+            --stage-color: #f8e0c5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dark body {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        header {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--puppet-color);
+            color: white;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 1rem;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stage {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 450px;
+            background-color: var(--stage-color);
+            border: 10px solid #8B4513;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .puppet {
+            position: absolute;
+            width: 150px;
+            height: 300px;
+            bottom: 50px;
+            left: calc(50% - 75px);
+            z-index: 10;
+            transition: transform 0.1s ease-out;
+        }
+
+        .puppet-head, .puppet-body, .puppet-left-arm, .puppet-right-arm, .puppet-legs {
+            position: absolute;
+            background-color: var(--puppet-color);
+        }
+
+        .puppet-head {
+            width: 50px;
+            height: 60px;
+            top: 0;
+            left: 50px;
+            border-radius: 25px 25px 15px 15px;
+        }
+
+        .puppet-body {
+            width: 80px;
+            height: 100px;
+            top: 60px;
+            left: 35px;
+        }
+
+        .puppet-left-arm, .puppet-right-arm {
+            width: 20px;
+            height: 90px;
+            top: 70px;
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+        }
+
+        .puppet-left-arm {
+            left: 15px;
+        }
+
+        .puppet-right-arm {
+            right: 15px;
+        }
+
+        .puppet-legs {
+            width: 80px;
+            height: 120px;
+            bottom: 0;
+            left: 35px;
+        }
+
+        .webcam-container {
+            width: 100%;
+            max-width: 640px;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        #webcam {
+            width: 100%;
+            height: auto;
+            transform: scaleX(-1);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #4a49b8;
+        }
+
+        button:disabled {
+            background-color: #b5b5b5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            width: 100%;
+            padding: 1rem;
+            text-align: center;
+            margin: 1rem 0;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .status {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            max-width: 800px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .instructions {
+            background-color: rgba(40, 40, 40, 0.8);
+        }
+
+        .instructions h2 {
+            color: var(--puppet-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions p {
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        footer {
+            width: 100%;
+            padding: 1rem;
+            text-align: center;
+            margin-top: auto;
+            background-color: var(--puppet-color);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .stage {
+                height: 350px;
+            }
+            
+            .puppet {
+                width: 120px;
+                height: 240px;
+                left: calc(50% - 60px);
+            }
+            
+            .puppet-head {
+                width: 40px;
+                height: 48px;
+                left: 40px;
+            }
+            
+            .puppet-body {
+                width: 64px;
+                height: 80px;
+                top: 48px;
+                left: 28px;
+            }
+            
+            .puppet-left-arm, .puppet-right-arm {
+                height: 72px;
+                top: 56px;
+            }
+            
+            .puppet-legs {
+                width: 64px;
+                height: 96px;
+                left: 28px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stage {
+                height: 250px;
+            }
+            
+            .puppet {
+                width: 90px;
+                height: 180px;
+                left: calc(50% - 45px);
+            }
+            
+            .puppet-head {
+                width: 30px;
+                height: 36px;
+                left: 30px;
+            }
+            
+            .puppet-body {
+                width: 48px;
+                height: 60px;
+                top: 36px;
+                left: 21px;
+            }
+            
+            .puppet-left-arm, .puppet-right-arm {
+                width: 15px;
+                height: 54px;
+                top: 42px;
+            }
+            
+            .puppet-legs {
+                width: 48px;
+                height: 72px;
+                left: 21px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>正在加載皮影戲遊戲...</p>
+    </div>
+
+    <header>
+        <h1>中國皮影戲遊戲</h1>
+    </header>
+
+    <div class="container">
+        <div class="stage">
+            <div class="puppet" id="puppet">
+                <div class="puppet-head"></div>
+                <div class="puppet-body"></div>
+                <div class="puppet-left-arm" id="leftArm"></div>
+                <div class="puppet-right-arm" id="rightArm"></div>
+                <div class="puppet-legs"></div>
+            </div>
+        </div>
+
+        <div class="webcam-container">
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+
+        <div class="controls">
+            <button id="startButton">開始遊戲</button>
+            <button id="stopButton" disabled>停止遊戲</button>
+        </div>
+
+        <div class="status" id="statusMessage">
+            請點擊「開始遊戲」按鈕，允許使用攝像頭來控制皮影戲角色。
+        </div>
+
+        <div class="instructions">
+            <h2>如何遊玩</h2>
+            <p>1. 點擊「開始遊戲」按鈕，並允許瀏覽器使用您的攝像頭。</p>
+            <p>2. 站在攝像頭前，確保您的上半身可見。</p>
+            <p>3. 通過您的肢體動作來控制皮影戲角色：</p>
+            <p>   - 舉起手臂使角色的手臂移動</p>
+            <p>   - 向左右移動使角色跟隨您的動作</p>
+            <p>   - 上下移動使角色也隨之上下移動</p>
+            <p>4. 享受傳統皮影戲的樂趣！</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>中國皮影戲遊戲 &copy; 2023</p>
+    </footer>
+
+    <script>
+        // 檢測暗黑模式偏好
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // DOM 元素
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const webcamElement = document.getElementById('webcam');
+        const puppet = document.getElementById('puppet');
+        const leftArm = document.getElementById('leftArm');
+        const rightArm = document.getElementById('rightArm');
+
+        // 全局變量
+        let detector;
+        let videoWidth, videoHeight;
+        let animationFrameId;
+        let isRunning = false;
+
+        // 初始化應用
+        async function init() {
+            try {
+                // 加載 MoveNet 模型
+                statusMessage.textContent = "正在加載模型...";
+                const model = poseDetection.SupportedModels.MoveNet;
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+                    enableSmoothing: true
+                };
+                detector = await poseDetection.createDetector(model, detectorConfig);
+                
+                loadingOverlay.style.display = 'none';
+                statusMessage.textContent = "模型已加載完成，請點擊「開始遊戲」按鈕。";
+            } catch (error) {
+                console.error('初始化錯誤:', error);
+                statusMessage.textContent = `初始化錯誤: ${error.message}`;
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // 開始攝像頭和遊戲
+        async function startGame() {
+            if (!detector) {
+                statusMessage.textContent = "模型尚未加載完成，請稍候。";
+                return;
+            }
+
+            try {
+                // 啟動攝像頭
+                const constraints = {
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                webcamElement.srcObject = stream;
+
+                // 等待視頻準備就緒
+                await new Promise(resolve => {
+                    webcamElement.onloadeddata = () => {
+                        resolve();
+                    };
+                });
+
+                videoWidth = webcamElement.videoWidth;
+                videoHeight = webcamElement.videoHeight;
+                
+                // 更新UI
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                statusMessage.textContent = "遊戲運行中！通過身體動作控制皮影戲角色。";
+                isRunning = true;
+
+                // 開始檢測循環
+                detectPoseInRealTime();
+            } catch (error) {
+                console.error('開始遊戲錯誤:', error);
+                statusMessage.textContent = `無法訪問攝像頭: ${error.message}`;
+            }
+        }
+
+        // 停止遊戲和攝像頭
+        function stopGame() {
+            if (webcamElement.srcObject) {
+                webcamElement.srcObject.getTracks().forEach(track => {
+                    track.stop();
+                });
+                webcamElement.srcObject = null;
+            }
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            // 重置角色位置和姿勢
+            puppet.style.transform = `translate(0, 0)`;
+            leftArm.style.transform = 'rotate(0deg)';
+            rightArm.style.transform = 'rotate(0deg)';
+
+            // 更新UI
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            statusMessage.textContent = "遊戲已停止。";
+            isRunning = false;
+        }
+
+        // 實時檢測姿勢並控制皮影角色
+        async function detectPoseInRealTime() {
+            if (!isRunning) return;
+
+            try {
+                const poses = await detector.estimatePoses(webcamElement, { flipHorizontal: true });
+                
+                if (poses.length > 0) {
+                    const pose = poses[0];
+                    controlPuppet(pose);
+                }
+            } catch (error) {
+                console.error('檢測姿勢錯誤:', error);
+            }
+
+            animationFrameId = requestAnimationFrame(detectPoseInRealTime);
+        }
+
+        // 根據檢測到的姿勢控制皮影角色
+        function controlPuppet(pose) {
+            const keypoints = pose.keypoints;
+            
+            // 查找所需關鍵點
+            const nose = findKeypoint(keypoints, 'nose');
+            const leftShoulder = findKeypoint(keypoints, 'left_shoulder');
+            const rightShoulder = findKeypoint(keypoints, 'right_shoulder');
+            const leftElbow = findKeypoint(keypoints, 'left_elbow');
+            const rightElbow = findKeypoint(keypoints, 'right_elbow');
+            const leftWrist = findKeypoint(keypoints, 'left_wrist');
+            const rightWrist = findKeypoint(keypoints, 'right_wrist');
+            
+            if (nose && leftShoulder && rightShoulder) {
+                // 計算垂直位置（跳躍/下蹲）
+                const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                const normalizedY = (shoulderY / videoHeight) * 100;
+                let verticalOffset = (normalizedY - 30) * 3; // 縮放以使運動更加明顯
+                verticalOffset = Math.max(-50, Math.min(50, verticalOffset)); // 限制範圍
+                
+                // 計算水平位置（左/右移動）
+                const shoulderX = (leftShoulder.x + rightShoulder.x) / 2;
+                const normalizedX = (shoulderX / videoWidth) * 100;
+                let horizontalOffset = (normalizedX - 50) * 2; // 縮放以使運動更加明顯
+                horizontalOffset = Math.max(-100, Math.min(100, horizontalOffset)); // 限制範圍
+                
+                // 應用移動到皮影角色
+                puppet.style.transform = `translate(${horizontalOffset}px, ${verticalOffset}px)`;
+                
+                // 控制手臂位置（如果檢測到）
+                if (leftElbow && leftWrist && leftElbow.score > 0.5 && leftWrist.score > 0.5) {
+                    // 計算左臂相對於肩膀的角度
+                    const leftArmAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+                    const leftArmRotation = Math.max(-90, Math.min(90, 180 - leftArmAngle));
+                    leftArm.style.transform = `rotate(${leftArmRotation}deg)`;
+                }
+                
+                if (rightElbow && rightWrist && rightElbow.score > 0.5 && rightWrist.score > 0.5) {
+                    // 計算右臂相對於肩膀的角度
+                    const rightArmAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+                    const rightArmRotation = Math.max(-90, Math.min(90, rightArmAngle - 180));
+                    rightArm.style.transform = `rotate(${rightArmRotation}deg)`;
+                }
+            }
+        }
+
+        // 輔助函數：查找特定關鍵點
+        function findKeypoint(keypoints, name) {
+            return keypoints.find(keypoint => keypoint.name === name);
+        }
+
+        // 計算三點之間的角度（以度為單位）
+        function calculateAngle(a, b, c) {
+            const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+            let angle = Math.abs(radians * 180.0 / Math.PI);
+            if (angle > 180.0) {
+                angle = 360.0 - angle;
+            }
+            return angle;
+        }
+
+        // 事件監聽器
+        startButton.addEventListener('click', startGame);
+        stopButton.addEventListener('click', stopGame);
+
+        // 初始化應用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

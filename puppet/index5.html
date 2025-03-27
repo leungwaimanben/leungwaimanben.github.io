@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中國皮影戲遊戲</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.19.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0"></script>
+    <style>
+        :root {
+            --primary-color: #5D5CDE;
+            --bg-light: #FFFFFF;
+            --bg-dark: #181818;
+            --text-light: #333333;
+            --text-dark: #F5F5F5;
+            
+            /* 皮影角色的不同部位颜色 */
+            --puppet-head-color: #FF3A36;
+            --puppet-body-color: #E02C29;
+            --puppet-waist-color: #A82B25;
+            --puppet-upper-arm-color: #C52B25;
+            --puppet-forearm-color: #D72E27;
+            --puppet-upper-leg-color: #8C2A24;
+            --puppet-lower-leg-color: #9C2B24;
+            
+            --stage-color: #f8e0c5;
+            --joint-color: #FFC107;
+            --indicator-bg: #7ED376;  /* 更亮的绿色，与参考图像匹配 */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dark body {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        header {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--puppet-head-color);
+            color: white;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 1rem;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stage {
+            position: relative;
+            width: 100%;
+            max-width: 658px;
+            height: 370px;
+            background-image: url('background.jpg');
+            border: 10px solid #8B4513;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 置信度和跳跃率显示 - 更新以匹配参考图像 */
+        .indicator {
+            position: absolute;
+            background-color: var(--indicator-bg);
+            color: white;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 25;
+            text-align: center;
+        }
+        
+        .accuracy-indicator {
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .jump-indicator {
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .puppet {
+            position: absolute;
+            width: 150px;
+            height: 300px;
+            bottom: 50px;
+            left: calc(50% - 75px);
+            z-index: 10;
+            transition: transform 0.1s ease-out;
+        }
+
+        .puppet-head, .puppet-body, .puppet-waist, 
+        .puppet-upper-legs, .puppet-lower-legs {
+            position: absolute;
+            border-radius: 4px;
+        }
+
+        .puppet-head {
+            width: 58px;
+            height: 47px;
+            top: 0;
+            left: 50px;
+            border-radius: 20px 20px 10px 10px;
+            background-image: url('head.png');
+            transform-origin: bottom center;
+            z-index: 15;
+        }
+
+        .puppet-body {
+            width: 60px;
+            height: 60px;
+            top: 50px;
+            left: 40px;
+            background-color: var(--puppet-body-color);
+            transform-origin: top center;
+            z-index: 10;
+        }
+
+        .puppet-waist {
+            width: 50px;
+            height: 25px;
+            top: 110px;
+            left: 45px;
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+            background-color: var(--puppet-waist-color);
+            z-index: 9;
+        }
+
+        /* 关节点样式 - 小黄点 */
+        .joint-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: var(--joint-color);
+            border-radius: 50%;
+            z-index: 20;
+        }
+
+        /* 手臂相关样式 - 修改以实现完整运动范围 */
+        .arm-segment {
+            position: absolute;
+            transition: transform 0.2s ease;
+        }
+
+        /* 修改手臂容器，确保正确的变换原点 */
+        .arm-container {
+            position: absolute;
+            z-index: 12;
+        }
+
+        /* 修改左臂容器，设置变换原点在肩膀位置 */
+        .left-arm-container {
+            top: 60px;
+            left: 30px;
+            width: 15px;
+            height: 100px;
+            transform-origin: top left;
+        }
+
+        /* 修改右臂容器，设置变换原点在肩膀位置 */
+        .right-arm-container {
+            top: 60px;
+            right: 30px;
+            width: 15px;
+            height: 100px;
+            transform-origin: top right;
+        }
+
+        .puppet-left-upper-arm, .puppet-right-upper-arm {
+            width: 15px;
+            height: 40px;
+            background-color: var(--puppet-upper-arm-color);
+            top: 0;
+            left: 0;
+            border-radius: 4px;
+            transform-origin: top center;
+        }
+
+        .puppet-right-upper-arm {
+            right: 0;
+            left: auto;
+        }
+
+        .puppet-left-forearm, .puppet-right-forearm {
+            width: 12px;
+            height: 40px;
+            top: 40px;
+            left: 1.5px;
+            background-color: var(--puppet-forearm-color);
+            border-radius: 4px;
+            transform-origin: top center;
+        }
+
+        .puppet-right-forearm {
+            right: 1.5px;
+            left: auto;
+        }
+
+        /* 腿相关样式 */
+        .leg-container {
+            position: absolute;
+            transform-origin: top center;
+            z-index: 8;
+        }
+
+        .left-leg-container {
+            top: 135px;
+            left: 50px;
+            height: 110px;
+            width: 20px;
+        }
+
+        .right-leg-container {
+            top: 135px;
+            right: 50px;
+            height: 110px;
+            width: 20px;
+        }
+
+        .puppet-left-upper-leg, .puppet-right-upper-leg {
+            width: 18px;
+            height: 50px;
+            background-color: var(--puppet-upper-leg-color);
+            top: 0;
+            left: 0;
+            border-radius: 4px;
+        }
+
+        .puppet-right-upper-leg {
+            right: 0;
+            left: auto;
+        }
+
+        .puppet-left-lower-leg, .puppet-right-lower-leg {
+            width: 16px;
+            height: 50px;
+            top: 50px;
+            left: 1px;
+            background-color: var(--puppet-lower-leg-color);
+            border-radius: 4px;
+            transform-origin: top center;
+        }
+
+        .puppet-right-lower-leg {
+            right: 1px;
+            left: auto;
+        }
+
+        /* 肩关节 */
+        #leftShoulderPoint {
+            top: 60px;
+            left: 30px;
+        }
+
+        #rightShoulderPoint {
+            top: 60px;
+            right: 30px;
+        }
+
+        /* 肘关节 */
+        #leftElbowPoint {
+            top: 100px;
+            left: 30px;
+        }
+
+        #rightElbowPoint {
+            top: 100px;
+            right: 30px;
+        }
+
+        /* 髋关节 */
+        #leftHipPoint {
+            top: 135px;
+            left: 50px;
+        }
+
+        #rightHipPoint {
+            top: 135px;
+            right: 50px;
+        }
+
+        /* 膝关节 */
+        #leftKneePoint {
+            top: 185px;
+            left: 50px;
+        }
+
+        #rightKneePoint {
+            top: 185px;
+            right: 50px;
+        }
+
+        /* 其他关节 */
+        #waistPoint {
+            top: 110px;
+            left: 70px;
+        }
+
+        .webcam-container {
+            width: 100%;
+            max-width: 640px;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        #webcam {
+            width: 100%;
+            height: auto;
+            transform: scaleX(-1);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        #webcam-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        
+        .camera-joint {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 2px solid black;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #4a49b8;
+        }
+
+        button:disabled {
+            background-color: #b5b5b5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            width: 100%;
+            padding: 1rem;
+            text-align: center;
+            margin: 1rem 0;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .status {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 显示/隐藏关节点的开关 */
+        .joint-toggle {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+
+        .joint-toggle label {
+            margin-left: 0.5rem;
+            cursor: pointer;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            max-width: 800px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .instructions {
+            background-color: rgba(40, 40, 40, 0.8);
+        }
+
+        .instructions h2 {
+            color: var(--puppet-head-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions p {
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        footer {
+            width: 100%;
+            padding: 1rem;
+            text-align: center;
+            margin-top: auto;
+            background-color: var(--puppet-head-color);
+            color: white;
+        }
+
+        /* 骨架颜色映射 */
+        .skeleton-colors {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 1rem 0;
+            gap: 0.5rem;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            margin: 0.25rem;
+        }
+
+        .color-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            display: inline-block;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .tracking-quality {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .tracking-good {
+            background: rgba(0,150,0,0.5);
+        }
+        
+        .tracking-medium {
+            background: rgba(255,165,0,0.5);
+        }
+        
+        .tracking-poor {
+            background: rgba(255,0,0,0.5);
+        }
+
+        @media (max-width: 768px) {
+            .stage {
+                height: 350px;
+            }
+            
+            .puppet {
+                width: 120px;
+                height: 240px;
+                left: calc(50% - 60px);
+            }
+            
+            .puppet-head {
+                width: 32px;
+                height: 40px;
+                left: 40px;
+            }
+            
+            .puppet-body {
+                width: 48px;
+                height: 48px;
+                top: 40px;
+                left: 32px;
+            }
+            
+            .puppet-waist {
+                width: 40px;
+                height: 20px;
+                top: 88px;
+                left: 36px;
+            }
+            
+            .left-arm-container, .right-arm-container {
+                top: 48px;
+                height: 80px;
+            }
+            
+            .left-arm-container {
+                left: 24px;
+            }
+            
+            .right-arm-container {
+                right: 24px;
+            }
+            
+            .puppet-left-upper-arm, .puppet-right-upper-arm {
+                height: 32px;
+            }
+            
+            .puppet-left-forearm, .puppet-right-forearm {
+                height: 32px;
+                top: 32px;
+            }
+            
+            .left-leg-container, .right-leg-container {
+                top: 108px;
+                height: 88px;
+            }
+            
+            .left-leg-container {
+                left: 40px;
+            }
+            
+            .right-leg-container {
+                right: 40px;
+            }
+            
+            .puppet-left-upper-leg, .puppet-right-upper-leg {
+                height: 40px;
+            }
+            
+            .puppet-left-lower-leg, .puppet-right-lower-leg {
+                height: 40px;
+                top: 40px;
+            }
+            
+            /* 调整关节点位置 */
+            #leftShoulderPoint {
+                top: 48px;
+                left: 24px;
+            }
+            
+            #rightShoulderPoint {
+                top: 48px;
+                right: 24px;
+            }
+            
+            #leftElbowPoint {
+                top: 80px;
+                left: 24px;
+            }
+            
+            #rightElbowPoint {
+                top: 80px;
+                right: 24px;
+            }
+            
+            #waistPoint {
+                top: 88px;
+                left: 56px;
+            }
+            
+            #leftHipPoint {
+                top: 108px;
+                left: 40px;
+            }
+            
+            #rightHipPoint {
+                top: 108px;
+                right: 40px;
+            }
+            
+            #leftKneePoint {
+                top: 148px;
+                left: 40px;
+            }
+            
+            #rightKneePoint {
+                top: 148px;
+                right: 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stage {
+                height: 250px;
+            }
+            
+            .puppet {
+                width: 90px;
+                height: 180px;
+                left: calc(50% - 45px);
+            }
+            
+            .puppet-head {
+                width: 24px;
+                height: 30px;
+                left: 30px;
+            }
+            
+            .puppet-body {
+                width: 36px;
+                height: 36px;
+                top: 30px;
+                left: 24px;
+            }
+            
+            .puppet-waist {
+                width: 30px;
+                height: 15px;
+                top: 66px;
+                left: 27px;
+            }
+            
+            .left-arm-container, .right-arm-container {
+                top: 36px;
+                height: 60px;
+                width: 10px;
+            }
+            
+            .left-arm-container {
+                left: 18px;
+            }
+            
+            .right-arm-container {
+                right: 18px;
+            }
+            
+            .puppet-left-upper-arm, .puppet-right-upper-arm {
+                width: 10px;
+                height: 24px;
+            }
+            
+            .puppet-left-forearm, .puppet-right-forearm {
+                width: 8px;
+                height: 24px;
+                top: 24px;
+                left: 1px;
+            }
+            
+            .puppet-right-forearm {
+                right: 1px;
+                left: auto;
+            }
+            
+            .left-leg-container, .right-leg-container {
+                top: 81px;
+                height: 66px;
+                width: 15px;
+            }
+            
+            .left-leg-container {
+                left: 30px;
+            }
+            
+            .right-leg-container {
+                right: 30px;
+            }
+            
+            .puppet-left-upper-leg, .puppet-right-upper-leg {
+                width: 14px;
+                height: 30px;
+            }
+            
+            .puppet-left-lower-leg, .puppet-right-lower-leg {
+                width: 12px;
+                height: 30px;
+                top: 30px;
+            }
+            
+            /* 调整关节点位置 */
+            #leftShoulderPoint {
+                top: 36px;
+                left: 18px;
+            }
+            
+            #rightShoulderPoint {
+                top: 36px;
+                right: 18px;
+            }
+            
+            #leftElbowPoint {
+                top: 60px;
+                left: 18px;
+            }
+            
+            #rightElbowPoint {
+                top: 60px;
+                right: 18px;
+            }
+            
+            #waistPoint {
+                top: 66px;
+                left: 42px;
+            }
+            
+            #leftHipPoint {
+                top: 81px;
+                left: 30px;
+            }
+            
+            #rightHipPoint {
+                top: 81px;
+                right: 30px;
+            }
+            
+            #leftKneePoint {
+                top: 111px;
+                left: 30px;
+            }
+            
+            #rightKneePoint {
+                top: 111px;
+                right: 30px;
+            }
+            
+            .joint-point {
+                width: 6px;
+                height: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>正在加載皮影戲遊戲...</p>
+    </div>
+
+    <header>
+        <h1>中國皮影戲遊戲</h1>
+    </header>
+
+    <div class="container">
+        <div class="stage">
+            <div class="puppet" id="puppet">
+                <!-- 更新指示器样式以匹配参考图像 -->
+                <div class="indicator accuracy-indicator" id="accuracyIndicator"></div>
+                <div class="indicator jump-indicator" id="jumpIndicator"></div>
+                
+                <div class="puppet-head" id="head"></div>
+                <div class="puppet-body" id="body"></div>
+                <div class="puppet-waist" id="waist"></div>
+                
+                <!-- 左臂 -->
+                <div class="arm-container left-arm-container" id="leftArmContainer">
+                    <div class="arm-segment puppet-left-upper-arm" id="leftUpperArm"></div>
+                    <div class="arm-segment puppet-left-forearm" id="leftForearm"></div>
+                    <div class="joint-point" id="leftElbowPoint"></div>
+                </div>
+                
+                <!-- 右臂 -->
+                <div class="arm-container right-arm-container" id="rightArmContainer">
+                    <div class="arm-segment puppet-right-upper-arm" id="rightUpperArm"></div>
+                    <div class="arm-segment puppet-right-forearm" id="rightForearm"></div>
+                    <div class="joint-point" id="rightElbowPoint"></div>
+                </div>
+                
+                <!-- 左腿 -->
+                <div class="leg-container left-leg-container" id="leftLegContainer">
+                    <div class="arm-segment puppet-left-upper-leg" id="leftUpperLeg"></div>
+                    <div class="arm-segment puppet-left-lower-leg" id="leftLowerLeg"></div>
+                    <div class="joint-point" id="leftKneePoint"></div>
+                </div>
+                
+                <!-- 右腿 -->
+                <div class="leg-container right-leg-container" id="rightLegContainer">
+                    <div class="arm-segment puppet-right-upper-leg" id="rightUpperLeg"></div>
+                    <div class="arm-segment puppet-right-lower-leg" id="rightLowerLeg"></div>
+                    <div class="joint-point" id="rightKneePoint"></div>
+                </div>
+                
+                <!-- 关节点 -->
+                <div class="joint-point" id="leftShoulderPoint"></div>
+                <div class="joint-point" id="rightShoulderPoint"></div>
+                <div class="joint-point" id="waistPoint"></div>
+                <div class="joint-point" id="leftHipPoint"></div>
+                <div class="joint-point" id="rightHipPoint"></div>
+                
+                <!-- 跟踪质量指示器 -->
+                <div class="tracking-quality" id="trackingQuality"></div>
+            </div>
+        </div>
+
+        <div class="webcam-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="webcam-canvas"></canvas>
+            <div id="camera-joints-container"></div>
+        </div>
+
+        <div class="controls">
+            <button id="startButton">開始遊戲</button>
+            <button id="stopButton" disabled>停止遊戲</button>
+            <div class="joint-toggle">
+                <input type="checkbox" id="showJoints" checked>
+                <label for="showJoints">显示关节点</label>
+            </div>
+        </div>
+
+        <div class="status" id="statusMessage">
+            請點擊「開始遊戲」按鈕，允許使用攝像頭來控制皮影戲角色。
+        </div>
+
+        <div class="instructions">
+            <h2>如何遊玩</h2>
+            <p>1. 點擊「開始遊戲」按鈕，並允許瀏覽器使用您的攝像頭。</p>
+            <p>2. 站在攝像頭前，確保您的上半身可見。</p>
+            <p>3. 通過您的肢體動作來控制皮影戲角色：</p>
+            <p>   - 移动手臂控制角色的上臂和前臂，可實現垂直向上等全範圍運動</p>
+            <p>   - 弯曲腰部使角色的腰部活动</p>
+            <p>   - 移动腿部控制角色的上腿和下腿</p>
+            <p>   - 向左右移动使角色跟隨您的動作</p>
+            <p>   - 上下移动使角色也隨之上下移動</p>
+            <p>4. 角色頭部上方的指示器顯示姿勢識別的正確率和跳躍率</p>
+            <p>5. 摄像头画面上的彩色点和线表示检测到的身体关节，不同颜色代表不同关节</p>
+            <p>6. 享受傳統皮影戲的樂趣！</p>
+        </div>
+        
+        <div class="skeleton-colors">
+            <div class="color-item">
+                <span class="color-box" style="background-color: #FF0000;"></span>
+                <span>鼻子</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #00FF00;"></span>
+                <span>左肩</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #0000FF;"></span>
+                <span>右肩</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #FFFF00;"></span>
+                <span>左肘</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #FF00FF;"></span>
+                <span>右肘</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #00FFFF;"></span>
+                <span>左腕</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #FF8000;"></span>
+                <span>右腕</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #8000FF;"></span>
+                <span>左髋</span>
+            </div>
+            <div class="color-item">
+                <span class="color-box" style="background-color: #0080FF;"></span>
+                <span>右髋</span>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>中國皮影戲遊戲 &copy; 2023</p>
+    </footer>
+
+    <script>
+        // 檢測暗黑模式偏好
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // DOM 元素
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const webcamElement = document.getElementById('webcam');
+        const webcamCanvas = document.getElementById('webcam-canvas');
+        const puppet = document.getElementById('puppet');
+        const showJointsCheckbox = document.getElementById('showJoints');
+        const trackingQuality = document.getElementById('trackingQuality');
+        const accuracyIndicator = document.getElementById('accuracyIndicator');
+        const jumpIndicator = document.getElementById('jumpIndicator');
+        
+        // 身体部位元素
+        const head = document.getElementById('head');
+        const body = document.getElementById('body');
+        const waist = document.getElementById('waist');
+        
+        // 左右手臂容器和部件
+        const leftArmContainer = document.getElementById('leftArmContainer');
+        const rightArmContainer = document.getElementById('rightArmContainer');
+        const leftUpperArm = document.getElementById('leftUpperArm');
+        const leftForearm = document.getElementById('leftForearm');
+        const rightUpperArm = document.getElementById('rightUpperArm');
+        const rightForearm = document.getElementById('rightForearm');
+        
+        // 左右腿容器和部件
+        const leftLegContainer = document.getElementById('leftLegContainer');
+        const rightLegContainer = document.getElementById('rightLegContainer');
+        const leftUpperLeg = document.getElementById('leftUpperLeg');
+        const leftLowerLeg = document.getElementById('leftLowerLeg');
+        const rightUpperLeg = document.getElementById('rightUpperLeg');
+        const rightLowerLeg = document.getElementById('rightLowerLeg');
+        
+        // 关节点元素
+        const jointPoints = document.querySelectorAll('.joint-point');
+        
+        // 全局变量
+        let detector;
+        let videoWidth, videoHeight;
+        let animationFrameId;
+        let isRunning = false;
+        let canvasCtx;
+        let overallTrackingScore = 0;
+        let lastPose = null;
+        let smoothingFactor = 0.5; // 平滑因子，值越大越平滑但响应越慢
+        
+        // 跳跃检测变量
+        let baselineY = 0;
+        let isJumping = false;
+        let jumpCount = 0;
+        let lastJumpTime = 0;
+        let jumpRate = 0;
+        
+        // 姿势置信度阈值
+        const CONFIDENCE_THRESHOLD = {
+            LOW: 0.3,
+            MEDIUM: 0.5,
+            HIGH: 0.7
+        };
+
+        // 初始化应用
+        async function init() {
+            try {
+                // 加载 MoveNet 模型
+                statusMessage.textContent = "正在加載模型...";
+                const model = poseDetection.SupportedModels.MoveNet;
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+                    enableSmoothing: true
+                };
+                detector = await poseDetection.createDetector(model, detectorConfig);
+                
+                // 初始化画布上下文
+                canvasCtx = webcamCanvas.getContext('2d');
+                
+                loadingOverlay.style.display = 'none';
+                statusMessage.textContent = "模型已加載完成，請點擊「開始遊戲」按鈕。";
+                
+                // 初始化关节点显示状态
+                updateJointPointsVisibility();
+            } catch (error) {
+                console.error('初始化錯誤:', error);
+                statusMessage.textContent = `初始化錯誤: ${error.message}`;
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // 开始攝像頭和遊戲
+        async function startGame() {
+            if (!detector) {
+                statusMessage.textContent = "模型尚未加載完成，請稍候。";
+                return;
+            }
+
+            try {
+                // 启动攝像頭
+                const constraints = {
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                webcamElement.srcObject = stream;
+
+                // 等待视频准备就绪
+                await new Promise(resolve => {
+                    webcamElement.onloadeddata = () => {
+                        resolve();
+                    };
+                });
+
+                videoWidth = webcamElement.videoWidth;
+                videoHeight = webcamElement.videoHeight;
+                
+                // 设置Canvas尺寸与视频匹配
+                webcamCanvas.width = videoWidth;
+                webcamCanvas.height = videoHeight;
+                
+                // 更新UI
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                statusMessage.textContent = "遊戲運行中！通過身體動作控制皮影戲角色。";
+                isRunning = true;
+
+                // 显示跟踪质量指示器和置信度
+                trackingQuality.style.display = 'block';
+                accuracyIndicator.style.display = 'block';
+                jumpIndicator.style.display = 'block';
+                
+                // 重置跳跃统计
+                jumpCount = 0;
+                lastJumpTime = Date.now();
+                jumpRate = 0;
+
+                // 开始检测循环
+                detectPoseInRealTime();
+            } catch (error) {
+                console.error('開始遊戲錯誤:', error);
+                statusMessage.textContent = `無法訪問攝像頭: ${error.message}`;
+            }
+        }
+
+        // 停止遊戲和攝像頭
+        function stopGame() {
+            if (webcamElement.srcObject) {
+                webcamElement.srcObject.getTracks().forEach(track => {
+                    track.stop();
+                });
+                webcamElement.srcObject = null;
+            }
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            // 清空Canvas
+            if (canvasCtx) {
+                canvasCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+            }
+
+            // 隐藏跟踪质量指示器和置信度指示器
+            trackingQuality.style.display = 'none';
+            accuracyIndicator.style.display = 'none';
+            jumpIndicator.style.display = 'none';
+
+            // 重置角色位置和姿势
+            puppet.style.transform = `translate(0, 0)`;
+            head.style.transform = 'rotate(0deg)';
+            body.style.transform = 'rotate(0deg)';
+            waist.style.transform = 'rotate(0deg)';
+            
+            leftArmContainer.style.transform = 'rotate(0deg)';
+            leftForearm.style.transform = 'rotate(0deg)';
+            rightArmContainer.style.transform = 'rotate(0deg)';
+            rightForearm.style.transform = 'rotate(0deg)';
+            
+            leftLegContainer.style.transform = 'rotate(0deg)';
+            leftLowerLeg.style.transform = 'rotate(0deg)';
+            rightLegContainer.style.transform = 'rotate(0deg)';
+            rightLowerLeg.style.transform = 'rotate(0deg)';
+
+            // 更新UI
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            statusMessage.textContent = "遊戲已停止。";
+            isRunning = false;
+            lastPose = null;
+            
+            // 重置跳跃相关变量
+            baselineY = 0;
+            isJumping = false;
+            jumpCount = 0;
+            lastJumpTime = 0;
+            jumpRate = 0;
+        }
+
+        // 更新关节点可见性
+        function updateJointPointsVisibility() {
+            const showJoints = showJointsCheckbox.checked;
+            jointPoints.forEach(point => {
+                point.style.display = showJoints ? 'block' : 'none';
+            });
+        }
+
+        // 更新指示器显示
+        function updateIndicators(accuracy, jumpRate) {
+            // 更新右上角质量指示器
+            //trackingQuality.textContent = `跟踪质量: ${Math.round(accuracy * 100)}%`;
+            trackingQuality.classList.remove('tracking-good', 'tracking-medium', 'tracking-poor');
+            
+            if (accuracy >= CONFIDENCE_THRESHOLD.HIGH) {
+                trackingQuality.classList.add('tracking-good');
+            } else if (accuracy >= CONFIDENCE_THRESHOLD.MEDIUM) {
+                trackingQuality.classList.add('tracking-medium');
+            } else {
+                trackingQuality.classList.add('tracking-poor');
+            }
+            
+            // 更新指示器
+            //accuracyIndicator.textContent = `正確率: ${Math.round(accuracy * 100)}%`;
+            //jumpIndicator.textContent = `跳躍率: ${Math.round(jumpRate)}%`;
+        }
+
+        // 检测跳跃
+        function detectJump(pose) {
+            if (!pose) return;
+            
+            const leftShoulder = findKeypoint(pose.keypoints, 'left_shoulder');
+            const rightShoulder = findKeypoint(pose.keypoints, 'right_shoulder');
+            
+            if (!leftShoulder || !rightShoulder || 
+                leftShoulder.score < CONFIDENCE_THRESHOLD.MEDIUM || 
+                rightShoulder.score < CONFIDENCE_THRESHOLD.MEDIUM) {
+                return;
+            }
+            
+            // 用肩膀位置的平均Y值来确定上下移动
+            const currentY = (leftShoulder.y + rightShoulder.y) / 2;
+            
+            // 初始化基准Y值
+            if (baselineY === 0) {
+                baselineY = currentY;
+                return;
+            }
+            
+            // 检测跳跃 - 当位置比基准高出一定值，且之前不在跳跃状态
+            const jumpThreshold = videoHeight * 0.10; // 10% 的视频高度作为跳跃阈值
+            
+            if (!isJumping && (baselineY - currentY) > jumpThreshold) {
+                isJumping = true;
+                jumpCount++;
+                
+                // 更新跳跃率 - 每分钟跳跃次数，限制在0-100之间
+                const now = Date.now();
+                const timeElapsed = (now - lastJumpTime) / 1000; // 秒数
+                
+                if (timeElapsed > 0) {
+                    // 计算每分钟跳跃次数
+                    const jumpsPerMinute = (jumpCount / timeElapsed) * 60;
+                    
+                    // 标准化为0-100的百分比 (假设正常人每分钟最多能跳50次)
+                    jumpRate = Math.min(100, (jumpsPerMinute / 50) * 100);
+                }
+            } 
+            // 当回到接近基准位置，重置跳跃状态
+            else if (isJumping && Math.abs(baselineY - currentY) < jumpThreshold * 0.5) {
+                isJumping = false;
+                
+                // 逐渐更新基准位置，适应用户高度变化
+                baselineY = baselineY * 0.8 + currentY * 0.2;
+            }
+            
+            // 周期性更新基准值，以便适应用户位置的渐变变化
+            if (!isJumping) {
+                baselineY = baselineY * 0.99 + currentY * 0.01;
+            }
+        }
+
+        // 平滑关键点，减少抖动
+        function smoothKeypoints(newPose, lastPose) {
+            if (!lastPose) return newPose;
+            
+            const smoothedKeypoints = [];
+            
+            for (let i = 0; i < newPose.keypoints.length; i++) {
+                const newKeypoint = newPose.keypoints[i];
+                const lastKeypoint = lastPose.keypoints.find(kp => kp.name === newKeypoint.name);
+                
+                if (lastKeypoint && newKeypoint.score > CONFIDENCE_THRESHOLD.LOW) {
+                    smoothedKeypoints.push({
+                        ...newKeypoint,
+                        x: lastKeypoint.x * smoothingFactor + newKeypoint.x * (1 - smoothingFactor),
+                        y: lastKeypoint.y * smoothingFactor + newKeypoint.y * (1 - smoothingFactor)
+                    });
+                } else {
+                    smoothedKeypoints.push(newKeypoint);
+                }
+            }
+            
+            return {
+                ...newPose,
+                keypoints: smoothedKeypoints
+            };
+        }
+
+        // 实时检测姿势并控制皮影角色
+        async function detectPoseInRealTime() {
+            if (!isRunning) return;
+
+            try {
+                const poses = await detector.estimatePoses(webcamElement, { flipHorizontal: true });
+                
+                // 清空Canvas准备绘制
+                canvasCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+                
+                if (poses.length > 0) {
+                    // 平滑处理姿势数据
+                    const pose = smoothKeypoints(poses[0], lastPose);
+                    lastPose = { ...pose }; // 保存当前姿势用于下一帧平滑
+                    
+                    // 计算整体跟踪质量得分
+                    const keypoints = pose.keypoints;
+                    let validPointsCount = 0;
+                    let totalScore = 0;
+                    
+                    keypoints.forEach(keypoint => {
+                        if (keypoint.score > CONFIDENCE_THRESHOLD.LOW) {
+                            validPointsCount++;
+                            totalScore += keypoint.score;
+                        }
+                    });
+                    
+                    if (validPointsCount > 0) {
+                        overallTrackingScore = totalScore / keypoints.length;
+                        // 检测跳跃
+                        detectJump(pose);
+                        // 更新指示器
+                        updateIndicators(overallTrackingScore, jumpRate);
+                    } else {
+                        updateIndicators(0, jumpRate);
+                    }
+                    
+                    // 控制皮影角色
+                    controlPuppet(pose);
+                    
+                    // 在摄像头上显示关节点和连接线
+                    displaySkeletonAndJoints(pose);
+                } else {
+                    updateIndicators(0, jumpRate);
+                }
+            } catch (error) {
+                console.error('檢測姿勢錯誤:', error);
+                updateIndicators(0, jumpRate);
+            }
+
+            animationFrameId = requestAnimationFrame(detectPoseInRealTime);
+        }
+        
+        // 绘制骨架和关节点，更接近参考图片中的颜色
+        function displaySkeletonAndJoints(pose) {
+            const container = document.getElementById('camera-joints-container');
+            const webcamRect = webcamElement.getBoundingClientRect();
+            
+            // 清除之前的关节点
+            container.innerHTML = '';
+            
+            // 只在选择显示关节点时绘制
+            if (!showJointsCheckbox.checked) return;
+            
+            // 关键点名称和颜色映射
+            const keypointColors = {
+                nose: '#FF0000',
+                left_shoulder: '#00FF00',
+                right_shoulder: '#0000FF',
+                left_elbow: '#FFFF00',
+                right_elbow: '#FF00FF',
+                left_wrist: '#00FFFF',
+                right_wrist: '#FF8000',
+                left_hip: '#8000FF',
+                right_hip: '#0080FF',
+                left_knee: '#80FF00',
+                right_knee: '#FF0080',
+                left_ankle: '#00FF80',
+                right_ankle: '#8000FF'
+            };
+            
+            // 骨架连接定义和颜色，更接近参考图片中的连线颜色
+            const skeletonConnections = [
+                ['left_shoulder', 'right_shoulder', '#3498DB'], 
+                ['left_shoulder', 'left_elbow', '#2ECC71'],     
+                ['right_shoulder', 'right_elbow', '#2ECC71'],   
+                ['left_elbow', 'left_wrist', '#F39C12'],        
+                ['right_elbow', 'right_wrist', '#F39C12'],      
+                ['left_shoulder', 'left_hip', '#9B59B6'],       
+                ['right_shoulder', 'right_hip', '#9B59B6'],     
+                ['left_hip', 'right_hip', '#3498DB'],           
+                ['left_hip', 'left_knee', '#E74C3C'],           
+                ['right_hip', 'right_knee', '#E74C3C'],         
+                ['left_knee', 'left_ankle', '#F1C40F'],         
+                ['right_knee', 'right_ankle', '#F1C40F']        
+            ];
+            
+            // 创建关键点字典以便通过名称查找
+            const keypointDict = {};
+            pose.keypoints.forEach(keypoint => {
+                keypointDict[keypoint.name] = keypoint;
+            });
+            
+            // 1. 先绘制骨架连接线
+            canvasCtx.lineWidth = 4;
+            
+            skeletonConnections.forEach(connection => {
+                const [p1Name, p2Name, color] = connection;
+                const p1 = keypointDict[p1Name];
+                const p2 = keypointDict[p2Name];
+                
+                if (p1 && p2 && p1.score > CONFIDENCE_THRESHOLD.LOW && p2.score > CONFIDENCE_THRESHOLD.LOW) {
+                    canvasCtx.strokeStyle = color; // 使用指定的颜色
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(p1.x, p1.y);
+                    canvasCtx.lineTo(p2.x, p2.y);
+                    canvasCtx.stroke();
+                }
+            });
+            
+            // 2. 在关节点上绘制彩色圆点 - 更接近参考图片中的点
+            pose.keypoints.forEach(keypoint => {
+                if (keypoint.score > CONFIDENCE_THRESHOLD.LOW) {
+                    // 在Canvas上绘制圆点
+                    const color = keypointColors[keypoint.name] || '#FFC107';
+                    canvasCtx.fillStyle = color;
+                    canvasCtx.beginPath();
+                    
+                    // 半径根据置信度变化，更接近参考图片中的大小
+                    const radius = 6 + (keypoint.score * 4);
+                    canvasCtx.arc(keypoint.x, keypoint.y, radius, 0, 2 * Math.PI);
+                    canvasCtx.fill();
+                    
+                    // 为低置信度的点添加红色边框
+                    if (keypoint.score < CONFIDENCE_THRESHOLD.MEDIUM) {
+                        canvasCtx.strokeStyle = 'red';
+                        canvasCtx.lineWidth = 2;
+                        canvasCtx.stroke();
+                    }
+                    
+                    // 创建DOM关节点（用于交互提示）
+                    const joint = document.createElement('div');
+                    joint.className = 'camera-joint';
+                    
+                    // 设置位置（按视频的实际尺寸比例缩放）
+                    const x = (keypoint.x / videoWidth) * webcamRect.width;
+                    const y = (keypoint.y / videoHeight) * webcamRect.height;
+                    
+                    joint.style.left = `${x}px`;
+                    joint.style.top = `${y}px`;
+                    
+                    // 设置颜色
+                    joint.style.backgroundColor = color;
+                    
+                    // 添加名称提示
+                    joint.title = keypoint.name.replace('_', ' ') + ` (${Math.round(keypoint.score * 100)}%)`;
+                    
+                    // 设置大小 - 置信度越高，点越大
+                    const size = 8 + (keypoint.score * 8); // 8px到16px
+                    joint.style.width = `${size}px`;
+                    joint.style.height = `${size}px`;
+                    
+                    // 为低置信度的点添加红色边框
+                    if (keypoint.score < CONFIDENCE_THRESHOLD.MEDIUM) {
+                        joint.style.borderColor = 'red';
+                    }
+                    
+                    container.appendChild(joint);
+                }
+            });
+        }
+
+        // 根据检测到的姿势控制皮影角色
+        function controlPuppet(pose) {
+            const keypoints = pose.keypoints;
+            
+            // 查找所需关键点
+            const nose = findKeypoint(keypoints, 'nose');
+            const leftShoulder = findKeypoint(keypoints, 'left_shoulder');
+            const rightShoulder = findKeypoint(keypoints, 'right_shoulder');
+            const leftElbow = findKeypoint(keypoints, 'left_elbow');
+            const rightElbow = findKeypoint(keypoints, 'right_elbow');
+            const leftWrist = findKeypoint(keypoints, 'left_wrist');
+            const rightWrist = findKeypoint(keypoints, 'right_wrist');
+            const leftHip = findKeypoint(keypoints, 'left_hip');
+            const rightHip = findKeypoint(keypoints, 'right_hip');
+            const leftKnee = findKeypoint(keypoints, 'left_knee');
+            const rightKnee = findKeypoint(keypoints, 'right_knee');
+            const leftAnkle = findKeypoint(keypoints, 'left_ankle');
+            const rightAnkle = findKeypoint(keypoints, 'right_ankle');
+            
+            // 检查是否有足够的关键点来控制角色
+            if (leftShoulder && rightShoulder && leftShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && rightShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+                // 计算垂直位置（跳跃/下蹲）
+                const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                const normalizedY = (shoulderY / videoHeight) * 100;
+                let verticalOffset = (normalizedY - 30) * 3; // 缩放以使运动更加明显
+                verticalOffset = Math.max(-100, Math.min(100, verticalOffset)); // 限制范围
+                
+                // 计算水平位置（左/右移动）
+                const shoulderX = (leftShoulder.x + rightShoulder.x) / 2;
+                const normalizedX = (shoulderX / videoWidth) * 100;
+                let horizontalOffset = (normalizedX - 50) * 2; // 缩放以使运动更加明显
+                horizontalOffset = Math.max(-100, Math.min(100, horizontalOffset)); // 限制范围
+                
+                // 应用移动到皮影角色
+                puppet.style.transform = `translate(${horizontalOffset}px, ${verticalOffset}px)`;
+                
+                // 控制头部 - 如果鼻子检测良好
+                if (nose && nose.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+                    const headAngle = calculateHeadAngle(nose, leftShoulder, rightShoulder);
+                    head.style.transform = `rotate(${headAngle}deg)`;
+                }
+                
+       // 控制左臂
+if (leftShoulder && leftElbow && leftShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && leftElbow.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+    // 计算从肩膀到肘部的角度
+    const dx = leftElbow.x - leftShoulder.x;
+    const dy = leftElbow.y - leftShoulder.y;
+    
+    // 计算上臂角度 - 弧度转度数
+    // 修改角度计算以适应皮影戏的视觉方向
+    const angle = -(Math.atan2(dy, dx) * 180 / Math.PI) +95; // 减去90度调整方向
+    
+    // 应用角度
+    leftArmContainer.style.transform = `rotate(${angle}deg)`;
+    
+    // 控制左前臂
+    if (leftWrist && leftWrist.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+        // 计算从肘部到手腕的角度
+        const dxWrist = leftWrist.x - leftElbow.x;
+        const dyWrist = leftWrist.y - leftElbow.y;
+        const forearmAngle = Math.atan2(dyWrist, dxWrist) * 180 / Math.PI ;
+        
+        // 计算前臂相对于上臂的角度差
+        let relativeAngle = -(forearmAngle +angle)+45;
+        
+        // 标准化角度到 -180 到 180 范围
+        while (relativeAngle > 180) relativeAngle -= 360;
+        while (relativeAngle < -180) relativeAngle += 360;
+		
+        
+        // 反转角度方向以匹配皮影戏视觉效果
+        //relativeAngle = -relativeAngle;
+        
+        // 限制肘部弯曲角度
+		
+		//relativeAngle = Math.max(-150, Math.min(150, relativeAngle));
+        
+		
+        // 应用相对角度到前臂
+        leftForearm.style.transform = `rotate(${relativeAngle}deg)`;
+    }
+}
+
+// 控制右臂 - 同样的修改
+if (rightShoulder && rightElbow && rightShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && rightElbow.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+    const dx = rightElbow.x - rightShoulder.x;
+    const dy = rightElbow.y - rightShoulder.y;
+    const angle = -(Math.atan2(dy, dx) * 180 / Math.PI) +90;
+    rightArmContainer.style.transform = `rotate(${angle}deg)`;
+    
+    if (rightWrist && rightWrist.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+        const dxWrist = rightWrist.x - rightElbow.x;
+        const dyWrist = rightWrist.y - rightElbow.y;
+        const forearmAngle = Math.atan2(dyWrist, dxWrist) * 180 / Math.PI ;
+        
+        let relativeAngle = forearmAngle - angle -45 ;
+        while (relativeAngle > 180) relativeAngle -= 360;
+        while (relativeAngle < -180) relativeAngle += 360;
+        //relativeAngle = -relativeAngle;
+        //relativeAngle = Math.max(-150, Math.min(150, relativeAngle));
+        
+        rightForearm.style.transform = `rotate(${relativeAngle}deg)`;
+    }
+}
+                
+                // 控制身体姿势
+                if (leftShoulder && rightShoulder && leftHip && rightHip && 
+                    leftShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && rightShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && 
+                    leftHip.score > CONFIDENCE_THRESHOLD.MEDIUM && rightHip.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+                    
+                    const shoulderMidpoint = {
+                        x: (leftShoulder.x + rightShoulder.x) / 2,
+                        y: (leftShoulder.y + rightShoulder.y) / 2
+                    };
+                    
+                    const hipMidpoint = {
+                        x: (leftHip.x + rightHip.x) / 2,
+                        y: (leftHip.y + rightHip.y) / 2
+                    };
+                    
+                    // 计算躯干和腰部角度
+                    const torsoAngle = calculateAngle(
+                        { x: shoulderMidpoint.x, y: shoulderMidpoint.y - 10 }, // 上参考点
+                        shoulderMidpoint,
+                        hipMidpoint
+                    );
+                    
+                    // 调整到适当的角度范围 (-30 到 30 度比较自然)
+                    const bodyRotation = Math.max(-30, Math.min(30, 180 - torsoAngle));
+                    body.style.transform = `rotate(${bodyRotation * 0.5}deg)`; // 身体旋转较小
+                    
+                    // 腰部角度 - 从身体的下部往下
+                    const waistAngle = calculateAngle(
+                        shoulderMidpoint,
+                        hipMidpoint,
+                        { x: hipMidpoint.x, y: hipMidpoint.y + 10 } // 下参考点
+                    );
+                    
+                    // 调整腰部角度，考虑身体已经旋转的部分
+                    const waistRotation = Math.max(-30, Math.min(30, waistAngle - 180 - (bodyRotation * 0.5)));
+                    waist.style.transform = `rotate(${waistRotation}deg)`;
+                }
+                
+                // 控制左腿
+                if (leftHip && leftKnee && leftHip.score > CONFIDENCE_THRESHOLD.MEDIUM && leftKnee.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+                    // 计算向量从髋部到膝盖
+                    const dx = leftKnee.x - leftHip.x;
+                    const dy = leftKnee.y - leftHip.y;
+                    
+                    // 计算上腿角度
+                    let leftUpperLegAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+                    
+                    // 适应人偶坐标系 (通常上腿垂直向下是0度)
+                    let adjustedLegAngle = leftUpperLegAngle - 90;
+                    
+                    // 限制腿的角度范围 (-60 到 90 度)，前60度后90度
+                    adjustedLegAngle = Math.max(-60, Math.min(90, adjustedLegAngle));
+                    
+                    // 应用旋转到整个左腿容器
+                    leftLegContainer.style.transform = `rotate(${adjustedLegAngle}deg)`;
+                    
+                    // 控制左小腿相对于左大腿的角度
+                    if (leftAnkle && leftAnkle.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+                        // 计算向量从膝盖到脚踝
+                        const dxLowerLeg = leftAnkle.x - leftKnee.x;
+                        const dyLowerLeg = leftAnkle.y - leftKnee.y;
+                        
+                        // 计算小腿角度
+                        let leftLowerLegAngle = Math.atan2(dyLowerLeg, dxLowerLeg) * 180 / Math.PI;
+                        
+                        // 计算小腿相对于大腿的角度差
+                        let relativeLowerLegAngle = leftLowerLegAngle - leftUpperLegAngle;
+                        
+                        // 调整到 -180 到 180 度范围
+                        while (relativeLowerLegAngle > 180) relativeLowerLegAngle -= 360;
+                        while (relativeLowerLegAngle < -180) relativeLowerLegAngle += 360;
+                        
+                        // 限制膝关节角度范围 (通常膝盖只能往一个方向弯曲，约0-150度)
+                        relativeLowerLegAngle = Math.max(0, Math.min(150, relativeLowerLegAngle));
+                        
+                        // 应用小腿旋转
+                        leftLowerLeg.style.transform = `rotate(${relativeLowerLegAngle}deg)`;
+                    }
+                }
+                
+                // 控制右腿
+                if (rightHip && rightKnee && rightHip.score > CONFIDENCE_THRESHOLD.MEDIUM && rightKnee.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+                    // 计算向量从髋部到膝盖
+                    const dx = rightKnee.x - rightHip.x;
+                    const dy = rightKnee.y - rightHip.y;
+                    
+                    // 计算上腿角度
+                    let rightUpperLegAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+                    
+                    // 适应人偶坐标系 (通常上腿垂直向下是0度)
+                    let adjustedLegAngle = rightUpperLegAngle - 90;
+                    
+                    // 限制腿的角度范围 (-60 到 90 度)，前60度后90度
+                    adjustedLegAngle = Math.max(-60, Math.min(90, adjustedLegAngle));
+                    
+                    // 应用旋转到整个右腿容器
+                    rightLegContainer.style.transform = `rotate(${adjustedLegAngle}deg)`;
+                    
+                    // 控制右小腿相对于右大腿的角度
+                    if (rightAnkle && rightAnkle.score > CONFIDENCE_THRESHOLD.MEDIUM) {
+                        // 计算向量从膝盖到脚踝
+                        const dxLowerLeg = rightAnkle.x - rightKnee.x;
+                        const dyLowerLeg = rightAnkle.y - rightKnee.y;
+                        
+                        // 计算小腿角度
+                        let rightLowerLegAngle = Math.atan2(dyLowerLeg, dxLowerLeg) * 180 / Math.PI;
+                        
+                        // 计算小腿相对于大腿的角度差
+                        let relativeLowerLegAngle = rightLowerLegAngle - rightUpperLegAngle;
+                        
+                        // 调整到 -180 到 180 度范围
+                        while (relativeLowerLegAngle > 180) relativeLowerLegAngle -= 360;
+                        while (relativeLowerLegAngle < -180) relativeLowerLegAngle += 360;
+                        
+                        // 限制膝关节角度范围 (通常膝盖只能往一个方向弯曲，约0-150度)
+                        relativeLowerLegAngle = Math.max(0, Math.min(150, relativeLowerLegAngle));
+                        
+                        // 应用小腿旋转
+                        rightLowerLeg.style.transform = `rotate(${relativeLowerLegAngle}deg)`;
+                    }
+                }
+            }
+        }
+
+        // 计算头部角度
+        function calculateHeadAngle(nose, leftShoulder, rightShoulder) {
+            if (!nose || !leftShoulder || !rightShoulder) return 0;
+            
+            // 计算肩膀中点
+            const shoulderMidpoint = {
+                x: (leftShoulder.x + rightShoulder.x) / 2,
+                y: (leftShoulder.y + rightShoulder.y) / 2
+            };
+            
+            // 计算从肩膀中点到鼻子的向量
+            const dx = nose.x - shoulderMidpoint.x;
+            const dy = nose.y - shoulderMidpoint.y;
+            
+            // 计算头部倾斜角度 (垂直向上为0度)
+            let headAngle = Math.atan2(dx, -dy) * 180 / Math.PI;
+            
+            // 限制头部旋转范围
+            return Math.max(-30, Math.min(30, headAngle));
+        }
+
+        // 辅助函数：查找特定关键点
+        function findKeypoint(keypoints, name) {
+            return keypoints.find(keypoint => keypoint.name === name);
+        }
+
+        // 计算三点之间的角度（以度为单位）
+        function calculateAngle(a, b, c) {
+            const ab = Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+            const bc = Math.sqrt(Math.pow(b.x - c.x, 2) + Math.pow(b.y - c.y, 2));
+            const ac = Math.sqrt(Math.pow(c.x - a.x, 2) + Math.pow(c.y - a.y, 2));
+            const angle = Math.acos((ab*ab + bc*bc - ac*ac) / (2 * ab * bc)) * 180 / Math.PI;
+            
+            // 确定角度的方向 (顺时针或逆时针)
+            const crossProduct = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+            return crossProduct < 0 ? 360 - angle : angle;
+        }
+
+        // 事件监听器
+        startButton.addEventListener('click', startGame);
+        stopButton.addEventListener('click', stopGame);
+        showJointsCheckbox.addEventListener('change', updateJointPointsVisibility);
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
