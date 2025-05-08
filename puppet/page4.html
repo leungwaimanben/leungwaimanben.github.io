@@ -41,7 +41,7 @@
             --text-dark: #f0f0f0;
             --shadow-color: ;
             
-            /* 皮影角色颜色 */
+            /* 皮影角色顏色 */
             --puppet-head-color: ;
             --puppet-body-color: ;
             --puppet-waist-color: ;
@@ -635,7 +635,7 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
         }
 
-        /* 响应式设计 */
+        /* 回應式設計 */
         @media (max-width: 768px) {
             header h1 {
                 font-size: 2rem;
@@ -717,9 +717,9 @@
                 </div>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav nav-dropdown" data-app-modern-menu="true"><li class="nav-item"><a class="nav-link link text-black text-primary display-4" href="index.html">主页</a></li>
-                    <li class="nav-item"><a class="nav-link link text-black text-primary display-4" href="page2.html">皮影戏的历史</a></li>
-                    <li class="nav-item"><a class="nav-link link text-black text-primary display-4" href="page3.html">皮影戏的艺术</a>
+                <ul class="navbar-nav nav-dropdown" data-app-modern-menu="true"><li class="nav-item"><a class="nav-link link text-black text-primary display-4" href="index.html">主頁</a></li>
+                    <li class="nav-item"><a class="nav-link link text-black text-primary display-4" href="page2.html">皮影戲的歷史</a></li>
+                    <li class="nav-item"><a class="nav-link link text-black text-primary display-4" href="page3.html">皮影戲的藝術</a>
                     </li></ul>
                 
                 <div class="navbar-buttons mbr-section-btn"><a class="btn btn-danger display-4" href="page4.html">
@@ -738,7 +738,7 @@
     <div class="container">
         <div class="game-area">
             <div class="stage-container">
-                <div class="stage-title">皮影舞台</div>
+                <div class="stage-title">皮影舞臺</div>
                 <div class="stage">
                     <div class="puppet" id="puppet">
                         <div class="indicator accuracy-indicator" id="accuracyIndicator"></div>
@@ -776,14 +776,14 @@
                             <div class="joint-point" id="rightKneePoint"></div>
                         </div>
                         
-                        <!-- 关节点 -->
+                        <!-- 關節點 -->
                         <div class="joint-point" id="leftShoulderPoint"></div>
                         <div class="joint-point" id="rightShoulderPoint"></div>
                         <div class="joint-point" id="waistPoint"></div>
                         <div class="joint-point" id="leftHipPoint"></div>
                         <div class="joint-point" id="rightHipPoint"></div>
                         
-                        <!-- 跟踪质量指示器 -->
+                        <!-- 跟蹤品質指示器 -->
                         <div class="tracking-quality" id="trackingQuality"></div>
                     </div>
                 </div>
@@ -812,7 +812,7 @@
             </button>
             <div class="joint-toggle">
                 <input type="checkbox" id="showJoints" checked>
-                <label for="showJoints">显示关节点</label>
+                <label for="showJoints">顯示關節點</label>
             </div>
         </div>
 
@@ -826,12 +826,12 @@
                 <li>點擊「開始遊戲」按鈕，並允許瀏覽器使用您的攝像頭。</li>
                 <li>站在攝像頭前，確保您的上半身可見。</li>
                 <li>通過您的肢體動作來控制皮影戲角色：</li>
-                <li>移动手臂控制角色的上臂和前臂，可實現垂直向上等全範圍運動</li>
-                <li>弯曲腰部使角色的腰部活动</li>
-                <li>移动腿部控制角色的上腿和下腿</li>
-                <li>向左右移动使角色跟隨您的動作</li>
-                <li>上下移动使角色也隨之上下移動</li>      
-                <li>摄像头画面上的彩色点和线表示检测到的身体关节，不同颜色代表不同关节</li>
+                <li>移動手臂控制角色的上臂和前臂，可實現垂直向上等全範圍運動</li>
+                <li>彎曲腰部使角色的腰部活動</li>
+                <li>移動腿部控制角色的上腿和下腿</li>
+                <li>向左右移動使角色跟隨您的動作</li>
+                <li>上下移動使角色也隨之上下移動</li>      
+                <li>攝像頭畫面上的彩色點和線表示檢測到的身體關節，不同顏色代表不同關節</li>
                 <li>享受傳統皮影戲的樂趣！</li>
             </ol>
         </div>
@@ -867,11 +867,11 @@
             </div>
             <div class="color-item">
                 <span class="color-box" style="background-color: #8000FF;"></span>
-                <span>左髋</span>
+                <span>左髖</span>
             </div>
             <div class="color-item">
                 <span class="color-box" style="background-color: #0080FF;"></span>
-                <span>右髋</span>
+                <span>右髖</span>
             </div>
         </div>
     </div>
@@ -902,7 +902,7 @@
         const accuracyIndicator = document.getElementById('accuracyIndicator');
         const jumpIndicator = document.getElementById('jumpIndicator');
         
-        // 身体部位元素
+        // 身體部位元素
         const head = document.getElementById('head');
         const body = document.getElementById('body');
         const waist = document.getElementById('waist');
@@ -923,10 +923,10 @@
         const rightUpperLeg = document.getElementById('rightUpperLeg');
         const rightLowerLeg = document.getElementById('rightLowerLeg');
         
-        // 关节点元素
+        // 關節點元素
         const jointPoints = document.querySelectorAll('.joint-point');
         
-        // 全局变量
+        // 全域變數
         let detector;
         let videoWidth, videoHeight;
         let animationFrameId;
@@ -934,26 +934,26 @@
         let canvasCtx;
         let overallTrackingScore = 0;
         let lastPose = null;
-        let smoothingFactor = 0.5; // 平滑因子，值越大越平滑但响应越慢
+        let smoothingFactor = 0.5; // 平滑因數，值越大越平滑但回應越慢
         
-        // 跳跃检测变量
+        // 跳躍檢測變數
         let baselineY = 0;
         let isJumping = false;
         let jumpCount = 0;
         let lastJumpTime = 0;
         let jumpRate = 0;
         
-        // 姿势置信度阈值
+        // 姿勢置信度閾值
         const CONFIDENCE_THRESHOLD = {
             LOW: 0.3,
             MEDIUM: 0.5,
             HIGH: 0.7
         };
 
-        // 初始化应用
+        // 初始化應用
         async function init() {
             try {
-                // 加载 MoveNet 模型
+                // 載入 MoveNet 模型
                 statusMessage.textContent = "正在加載模型...";
                 const model = poseDetection.SupportedModels.MoveNet;
                 const detectorConfig = {
@@ -962,13 +962,13 @@
                 };
                 detector = await poseDetection.createDetector(model, detectorConfig);
                 
-                // 初始化画布上下文
+                // 初始化畫布上下文
                 canvasCtx = webcamCanvas.getContext('2d');
                 
                 loadingOverlay.style.display = 'none';
                 statusMessage.textContent = "模型已加載完成，請點擊「開始遊戲」按鈕。";
                 
-                // 初始化关节点显示状态
+                // 初始化關節點顯示狀態
                 updateJointPointsVisibility();
             } catch (error) {
                 console.error('初始化錯誤:', error);
@@ -977,7 +977,7 @@
             }
         }
 
-        // 开始攝像頭和遊戲
+        // 開始攝像頭和遊戲
         async function startGame() {
             if (!detector) {
                 statusMessage.textContent = "模型尚未加載完成，請稍候。";
@@ -985,7 +985,7 @@
             }
 
             try {
-                // 启动攝像頭
+                // 啟動攝像頭
                 const constraints = {
                     video: {
                         facingMode: 'user',
@@ -997,7 +997,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 webcamElement.srcObject = stream;
 
-                // 等待视频准备就绪
+                // 等待視頻準備就緒
                 await new Promise(resolve => {
                     webcamElement.onloadeddata = () => {
                         resolve();
@@ -1007,7 +1007,7 @@
                 videoWidth = webcamElement.videoWidth;
                 videoHeight = webcamElement.videoHeight;
                 
-                // 设置Canvas尺寸与视频匹配
+                // 設置Canvas尺寸與視頻匹配
                 webcamCanvas.width = videoWidth;
                 webcamCanvas.height = videoHeight;
                 
@@ -1017,17 +1017,17 @@
                 statusMessage.textContent = "遊戲運行中！通過身體動作控制皮影戲角色。";
                 isRunning = true;
 
-                // 显示跟踪质量指示器和置信度
+                // 顯示跟蹤品質指示器和置信度
                 trackingQuality.style.display = 'block';
                 accuracyIndicator.style.display = 'block';
                 jumpIndicator.style.display = 'block';
                 
-                // 重置跳跃统计
+                // 重置跳躍統計
                 jumpCount = 0;
                 lastJumpTime = Date.now();
                 jumpRate = 0;
 
-                // 开始检测循环
+                // 開始檢測迴圈
                 detectPoseInRealTime();
             } catch (error) {
                 console.error('開始遊戲錯誤:', error);
@@ -1054,12 +1054,12 @@
                 canvasCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
             }
 
-            // 隐藏跟踪质量指示器和置信度指示器
+            // 隱藏跟蹤品質指示器和置信度指示器
                 trackingQuality.style.display = 'none';
                 accuracyIndicator.style.display = 'none';
                 jumpIndicator.style.display = 'none';
 
-                // 重置角色位置和姿势
+                // 重置角色位置和姿勢
                 puppet.style.transform = `translate(0, 0)`;
                 head.style.transform = 'rotate(0deg)';
                 body.style.transform = 'rotate(0deg)';
@@ -1082,7 +1082,7 @@
                 isRunning = false;
                 lastPose = null;
                 
-                // 重置跳跃相关变量
+                // 重置跳躍相關變數
                 baselineY = 0;
                 isJumping = false;
                 jumpCount = 0;
@@ -1090,7 +1090,7 @@
                 jumpRate = 0;
             }
 
-            // 更新关节点可见性
+            // 更新關節點可見性
             function updateJointPointsVisibility() {
                 const showJoints = showJointsCheckbox.checked;
                 jointPoints.forEach(point => {
@@ -1098,9 +1098,9 @@
                 });
             }
 
-            // 更新指示器显示
+            // 更新指示器顯示
             function updateIndicators(accuracy, jumpRate) {
-                // 更新右上角质量指示器
+                // 更新右上角質量指示器
                 trackingQuality.textContent = ``;
                 trackingQuality.classList.remove('tracking-good', 'tracking-medium', 'tracking-poor');
                 
@@ -1117,7 +1117,7 @@
                 jumpIndicator.textContent = ``;
             }
 
-            // 检测跳跃
+            // 檢測跳躍
             function detectJump(pose) {
                 if (!pose) return;
                 
@@ -1130,49 +1130,49 @@
                     return;
                 }
                 
-                // 用肩膀位置的平均Y值来确定上下移动
+                // 用肩膀位置的平均Y值來確定上下移動
                 const currentY = (leftShoulder.y + rightShoulder.y) / 2;
                 
-                // 初始化基准Y值
+                // 初始化基準Y值
                 if (baselineY === 0) {
                     baselineY = currentY;
                     return;
                 }
                 
-                // 检测跳跃 - 当位置比基准高出一定值，且之前不在跳跃状态
-                const jumpThreshold = videoHeight * 0.10; // 10% 的视频高度作为跳跃阈值
+                // 檢測跳躍 - 當位置比基準高出一定值，且之前不在跳躍狀態
+                const jumpThreshold = videoHeight * 0.10; // 10% 的視頻高度作為跳躍閾值
                 
                 if (!isJumping && (baselineY - currentY) > jumpThreshold) {
                     isJumping = true;
                     jumpCount++;
                     
-                    // 更新跳跃率 - 每分钟跳跃次数，限制在0-100之间
+                    // 更新跳躍率 - 每分鐘跳躍次數，限制在0-100之間
                     const now = Date.now();
-                    const timeElapsed = (now - lastJumpTime) / 1000; // 秒数
+                    const timeElapsed = (now - lastJumpTime) / 1000; // 秒數
                     
                     if (timeElapsed > 0) {
-                        // 计算每分钟跳跃次数
+                        // 計算每分鐘跳躍次數
                         const jumpsPerMinute = (jumpCount / timeElapsed) * 60;
                         
-                        // 标准化为0-100的百分比 (假设正常人每分钟最多能跳50次)
+                        // 標準化為0-100的百分比 (假設正常人每分鐘最多能跳50次)
                         jumpRate = Math.min(100, (jumpsPerMinute / 50) * 100);
                     }
                 } 
-                // 当回到接近基准位置，重置跳跃状态
+                // 當回到接近基準位置，重置跳躍狀態
                 else if (isJumping && Math.abs(baselineY - currentY) < jumpThreshold * 0.5) {
                     isJumping = false;
                     
-                    // 逐渐更新基准位置，适应用户高度变化
+                    // 逐漸更新基準位置，適應用戶高度變化
                     baselineY = baselineY * 0.8 + currentY * 0.2;
                 }
                 
-                // 周期性更新基准值，以便适应用户位置的渐变变化
+                // 週期性更新基準值，以便適應用戶位置的漸變變化
                 if (!isJumping) {
                     baselineY = baselineY * 0.99 + currentY * 0.01;
                 }
             }
 
-            // 平滑关键点，减少抖动
+            // 平滑關鍵點，減少抖動
             function smoothKeypoints(newPose, lastPose) {
                 if (!lastPose) return newPose;
                 
@@ -1199,22 +1199,22 @@
                 };
             }
 
-            // 实时检测姿势并控制皮影角色
+            // 即時檢測姿勢並控制皮影角色
             async function detectPoseInRealTime() {
                 if (!isRunning) return;
 
                 try {
                     const poses = await detector.estimatePoses(webcamElement, { flipHorizontal: true });
                     
-                    // 清空Canvas准备绘制
+                    // 清空Canvas準備繪製
                     canvasCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
                     
                     if (poses.length > 0) {
-                        // 平滑处理姿势数据
+                        // 平滑處理姿勢資料
                         const pose = smoothKeypoints(poses[0], lastPose);
-                        lastPose = { ...pose }; // 保存当前姿势用于下一帧平滑
+                        lastPose = { ...pose }; // 保存當前姿勢用於下一幀平滑
                         
-                        // 计算整体跟踪质量得分
+                        // 計算整體跟蹤品質得分
                         const keypoints = pose.keypoints;
                         let validPointsCount = 0;
                         let totalScore = 0;
@@ -1228,7 +1228,7 @@
                         
                         if (validPointsCount > 0) {
                             overallTrackingScore = totalScore / keypoints.length;
-                            // 检测跳跃
+                            // 檢測跳躍
                             detectJump(pose);
                             // 更新指示器
                             updateIndicators(overallTrackingScore, jumpRate);
@@ -1239,7 +1239,7 @@
                         // 控制皮影角色
                         controlPuppet(pose);
                         
-                        // 在摄像头上显示关节点和连接线
+                        // 在攝像頭上顯示關節點和連接線
                         displaySkeletonAndJoints(pose);
                     } else {
                         updateIndicators(0, jumpRate);
@@ -1252,18 +1252,18 @@
                 animationFrameId = requestAnimationFrame(detectPoseInRealTime);
             }
             
-            // 绘制骨架和关节点，更接近参考图片中的颜色
+            // 繪製骨架和關節點，更接近參考圖片中的顏色
             function displaySkeletonAndJoints(pose) {
                 const container = document.getElementById('camera-joints-container');
                 const webcamRect = webcamElement.getBoundingClientRect();
                 
-                // 清除之前的关节点
+                // 清除之前的關節點
                 container.innerHTML = '';
                 
-                // 只在选择显示关节点时绘制
+                // 只在選擇顯示關節點時繪製
                 if (!showJointsCheckbox.checked) return;
                 
-                // 关键点名称和颜色映射
+                // 關鍵點名稱和顏色映射
                 const keypointColors = {
                     nose: '#FF0000',
                     left_shoulder: '#00FF00',
@@ -1280,7 +1280,7 @@
                     right_ankle: '#8000FF'
                 };
                 
-                // 骨架连接定义和颜色，更接近参考图片中的连线颜色
+                // 骨架連接定義和顏色，更接近參考圖片中的連線顏色
                 const skeletonConnections = [
                     ['left_shoulder', 'right_shoulder', '#3498DB'], 
                     ['left_shoulder', 'left_elbow', '#2ECC71'],     
@@ -1296,13 +1296,13 @@
                     ['right_knee', 'right_ankle', '#F1C40F']        
                 ];
                 
-                // 创建关键点字典以便通过名称查找
+                // 創建關鍵點字典以便通過名稱查找
                 const keypointDict = {};
                 pose.keypoints.forEach(keypoint => {
                     keypointDict[keypoint.name] = keypoint;
                 });
                 
-                // 1. 先绘制骨架连接线
+                // 1. 先繪製骨架連接線
                 canvasCtx.lineWidth = 4;
                 
                 skeletonConnections.forEach(connection => {
@@ -1311,7 +1311,7 @@
                     const p2 = keypointDict[p2Name];
                     
                     if (p1 && p2 && p1.score > CONFIDENCE_THRESHOLD.LOW && p2.score > CONFIDENCE_THRESHOLD.LOW) {
-                        canvasCtx.strokeStyle = color; // 使用指定的颜色
+                        canvasCtx.strokeStyle = color; // 使用指定的顏色
                         canvasCtx.beginPath();
                         canvasCtx.moveTo(p1.x, p1.y);
                         canvasCtx.lineTo(p2.x, p2.y);
@@ -1319,49 +1319,49 @@
                     }
                 });
                 
-                // 2. 在关节点上绘制彩色圆点 - 更接近参考图片中的点
+                // 2. 在關節點上繪製彩色圓點 - 更接近參考圖片中的點
                 pose.keypoints.forEach(keypoint => {
                     if (keypoint.score > CONFIDENCE_THRESHOLD.LOW) {
-                        // 在Canvas上绘制圆点
+                        // 在Canvas上繪製圓點
                         const color = keypointColors[keypoint.name] || '#FFC107';
                         canvasCtx.fillStyle = color;
                         canvasCtx.beginPath();
                         
-                        // 半径根据置信度变化，更接近参考图片中的大小
+                        // 半徑根據置信度變化，更接近參考圖片中的大小
                         const radius = 6 + (keypoint.score * 4);
                         canvasCtx.arc(keypoint.x, keypoint.y, radius, 0, 2 * Math.PI);
                         canvasCtx.fill();
                         
-                        // 为低置信度的点添加红色边框
+                        // 為低置信度的點添加紅色邊框
                         if (keypoint.score < CONFIDENCE_THRESHOLD.MEDIUM) {
                             canvasCtx.strokeStyle = 'red';
                             canvasCtx.lineWidth = 2;
                             canvasCtx.stroke();
                         }
                         
-                        // 创建DOM关节点（用于交互提示）
+                        // 創建DOM關節點（用於交互提示）
                         const joint = document.createElement('div');
                         joint.className = 'camera-joint';
                         
-                        // 设置位置（按视频的实际尺寸比例缩放）
+                        // 設置位置（按視頻的實際尺寸比例縮放）
                         const x = (keypoint.x / videoWidth) * webcamRect.width;
                         const y = (keypoint.y / videoHeight) * webcamRect.height;
                         
                         joint.style.left = `${x}px`;
                         joint.style.top = `${y}px`;
                         
-                        // 设置颜色
+                        // 設置顏色
                         joint.style.backgroundColor = color;
                         
-                        // 添加名称提示
+                        // 添加名稱提示
                         joint.title = keypoint.name.replace('_', ' ') + ` (${Math.round(keypoint.score * 100)}%)`;
                         
-                        // 设置大小 - 置信度越高，点越大
+                        // 設置大小 - 置信度越高，點越大
                         const size = 8 + (keypoint.score * 8); // 8px到16px
                         joint.style.width = `${size}px`;
                         joint.style.height = `${size}px`;
                         
-                        // 为低置信度的点添加红色边框
+                        // 為低置信度的點添加紅色邊框
                         if (keypoint.score < CONFIDENCE_THRESHOLD.MEDIUM) {
                             joint.style.borderColor = 'red';
                         }
@@ -1371,11 +1371,11 @@
                 });
             }
 
-            // 根据检测到的姿势控制皮影角色
+            // 根據檢測到的姿勢控制皮影角色
             function controlPuppet(pose) {
                 const keypoints = pose.keypoints;
                 
-                // 查找所需关键点
+                // 查找所需關鍵點
                 const nose = findKeypoint(keypoints, 'nose');
                 const leftShoulder = findKeypoint(keypoints, 'left_shoulder');
                 const rightShoulder = findKeypoint(keypoints, 'right_shoulder');
@@ -1390,24 +1390,24 @@
                 const leftAnkle = findKeypoint(keypoints, 'left_ankle');
                 const rightAnkle = findKeypoint(keypoints, 'right_ankle');
                 
-                // 检查是否有足够的关键点来控制角色
+                // 檢查是否有足夠的關鍵點來控制角色
                 if (leftShoulder && rightShoulder && leftShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && rightShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM) {
-                    // 计算垂直位置（跳跃/下蹲）
+                    // 計算垂直位置（跳躍/下蹲）
                     const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
                     const normalizedY = (shoulderY / videoHeight) * 100;
-                    let verticalOffset = (normalizedY - 30) * 3; // 缩放以使运动更加明显
-                    verticalOffset = Math.max(-100, Math.min(100, verticalOffset)); // 限制范围
+                    let verticalOffset = (normalizedY - 30) * 3; // 縮放以使運動更加明顯
+                    verticalOffset = Math.max(-100, Math.min(100, verticalOffset)); // 限制範圍
                     
-                    // 计算水平位置（左/右移动）
+                    // 計算水準位置（左/右移動）
                     const shoulderX = (leftShoulder.x + rightShoulder.x) / 2;
                     const normalizedX = (shoulderX / videoWidth) * 100;
-                    let horizontalOffset = (normalizedX - 50) * 2; // 缩放以使运动更加明显
-                    horizontalOffset = Math.max(-100, Math.min(100, horizontalOffset)); // 限制范围
+                    let horizontalOffset = (normalizedX - 50) * 2; // 縮放以使運動更加明顯
+                    horizontalOffset = Math.max(-100, Math.min(100, horizontalOffset)); // 限制範圍
                     
-                    // 应用移动到皮影角色
+                    // 應用移動到皮影角色
                     puppet.style.transform = `translate(${horizontalOffset}px, ${verticalOffset}px)`;
                     
-                    // 控制头部 - 如果鼻子检测良好
+                    // 控制頭部 - 如果鼻子檢測良好
                     if (nose && nose.score > CONFIDENCE_THRESHOLD.MEDIUM) {
                         const headAngle = calculateHeadAngle(nose, leftShoulder, rightShoulder);
                         head.style.transform = `rotate(${headAngle}deg)`;
@@ -1415,46 +1415,46 @@
                     
            // 控制左臂
     if (leftShoulder && leftElbow && leftShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && leftElbow.score > CONFIDENCE_THRESHOLD.MEDIUM) {
-        // 计算从肩膀到肘部的角度
+        // 計算從肩膀到肘部的角度
         const dx = leftElbow.x - leftShoulder.x;
         const dy = leftElbow.y - leftShoulder.y;
         
-        // 计算上臂角度 - 弧度转度数
-        // 修改角度计算以适应皮影戏的视觉方向
-        const angle = -(Math.atan2(dy, dx) * 180 / Math.PI) +95; // 减去90度调整方向
+        // 計算上臂角度 - 弧度轉度數
+        // 修改角度計算以適應皮影戲的視覺方向
+        const angle = -(Math.atan2(dy, dx) * 180 / Math.PI) +95; // 減去90度調整方向
         
-        // 应用角度
+        // 應用角度
         leftArmContainer.style.transform = `rotate(${angle}deg)`;
         
         // 控制左前臂
         if (leftWrist && leftWrist.score > CONFIDENCE_THRESHOLD.MEDIUM) {
-            // 计算从肘部到手腕的角度
+            // 計算從肘部到手腕的角度
             const dxWrist = leftWrist.x - leftElbow.x;
             const dyWrist = leftWrist.y - leftElbow.y;
             const forearmAngle = Math.atan2(dyWrist, dxWrist) * 180 / Math.PI ;
             
-            // 计算前臂相对于上臂的角度差
+            // 計算前臂相對於上臂的角度差
             let relativeAngle = -(forearmAngle +angle)+45;
             
-            // 标准化角度到 -180 到 180 范围
+            // 標準化角度到 -180 到 180 範圍
             while (relativeAngle > 180) relativeAngle -= 360;
             while (relativeAngle < -180) relativeAngle += 360;
             
             
-            // 反转角度方向以匹配皮影戏视觉效果
+            // 反轉角度方向以匹配皮影戲視覺效果
             //relativeAngle = -relativeAngle;
             
-            // 限制肘部弯曲角度
+            // 限制肘部彎曲角度
             
             //relativeAngle = Math.max(-150, Math.min(150, relativeAngle));
             
             
-            // 应用相对角度到前臂
+            // 應用相對角度到前臂
             leftForearm.style.transform = `rotate(${relativeAngle}deg)`;
         }
     }
 
-    // 控制右臂 - 同样的修改
+    // 控制右臂 - 同樣的修改
     if (rightShoulder && rightElbow && rightShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && rightElbow.score > CONFIDENCE_THRESHOLD.MEDIUM) {
         const dx = rightElbow.x - rightShoulder.x;
         const dy = rightElbow.y - rightShoulder.y;
@@ -1476,7 +1476,7 @@
         }
     }
                     
-                    // 控制身体姿势
+                    // 控制身體姿勢
                     if (leftShoulder && rightShoulder && leftHip && rightHip && 
                         leftShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && rightShoulder.score > CONFIDENCE_THRESHOLD.MEDIUM && 
                         leftHip.score > CONFIDENCE_THRESHOLD.MEDIUM && rightHip.score > CONFIDENCE_THRESHOLD.MEDIUM) {
@@ -1491,159 +1491,159 @@
                             y: (leftHip.y + rightHip.y) / 2
                         };
                         
-                        // 计算躯干和腰部角度
+                        // 計算軀幹和腰部角度
                         const torsoAngle = calculateAngle(
-                            { x: shoulderMidpoint.x, y: shoulderMidpoint.y - 10 }, // 上参考点
+                            { x: shoulderMidpoint.x, y: shoulderMidpoint.y - 10 }, // 上參考點
                             shoulderMidpoint,
                             hipMidpoint
                         );
                         
-                        // 调整到适当的角度范围 (-30 到 30 度比较自然)
+                        // 調整到適當的角度範圍 (-30 到 30 度比較自然)
                         const bodyRotation = Math.max(-30, Math.min(30, 180 - torsoAngle));
-                        body.style.transform = `rotate(${bodyRotation * 0.5}deg)`; // 身体旋转较小
+                        body.style.transform = `rotate(${bodyRotation * 0.5}deg)`; // 身體旋轉較小
                         
-                        // 腰部角度 - 从身体的下部往下
+                        // 腰部角度 - 從身體的下部往下
                         const waistAngle = calculateAngle(
                             shoulderMidpoint,
                             hipMidpoint,
-                            { x: hipMidpoint.x, y: hipMidpoint.y + 10 } // 下参考点
+                            { x: hipMidpoint.x, y: hipMidpoint.y + 10 } // 下參考點
                         );
                         
-                        // 调整腰部角度，考虑身体已经旋转的部分
+                        // 調整腰部角度，考慮身體已經旋轉的部分
                         const waistRotation = Math.max(-30, Math.min(30, waistAngle - 180 - (bodyRotation * 0.5)));
                         waist.style.transform = `rotate(${waistRotation}deg)`;
                     }
                     
                     // 控制左腿
                     if (leftHip && leftKnee && leftHip.score > CONFIDENCE_THRESHOLD.MEDIUM && leftKnee.score > CONFIDENCE_THRESHOLD.MEDIUM) {
-                        // 计算向量从髋部到膝盖
+                        // 計算向量從髖部到膝蓋
                         const dx = leftKnee.x - leftHip.x;
                         const dy = leftKnee.y - leftHip.y;
                         
-                        // 计算上腿角度
+                        // 計算上腿角度
                         let leftUpperLegAngle = Math.atan2(dy, dx) * 180 / Math.PI;
                         
-                        // 适应人偶坐标系 (通常上腿垂直向下是0度)
+                        // 適應人偶坐標系 (通常上腿垂直向下是0度)
                         let adjustedLegAngle = leftUpperLegAngle - 90;
                         
-                        // 限制腿的角度范围 (-60 到 90 度)，前60度后90度
+                        // 限制腿的角度範圍 (-60 到 90 度)，前60度後90度
                         adjustedLegAngle = Math.max(-60, Math.min(90, adjustedLegAngle));
                         
-                        // 应用旋转到整个左腿容器
+                        // 應用旋轉到整個左腿容器
                         leftLegContainer.style.transform = `rotate(${adjustedLegAngle}deg)`;
                         
-                        // 控制左小腿相对于左大腿的角度
+                        // 控制左小腿相對于左大腿的角度
                         if (leftAnkle && leftAnkle.score > CONFIDENCE_THRESHOLD.MEDIUM) {
-                            // 计算向量从膝盖到脚踝
+                            // 計算向量從膝蓋到腳踝
                             const dxLowerLeg = leftAnkle.x - leftKnee.x;
                             const dyLowerLeg = leftAnkle.y - leftKnee.y;
                             
-                            // 计算小腿角度
+                            // 計算小腿角度
                             let leftLowerLegAngle = Math.atan2(dyLowerLeg, dxLowerLeg) * 180 / Math.PI;
                             
-                            // 计算小腿相对于大腿的角度差
+                            // 計算小腿相對於大腿的角度差
                             let relativeLowerLegAngle = leftLowerLegAngle - leftUpperLegAngle;
                             
-                            // 调整到 -180 到 180 度范围
+                            // 調整到 -180 到 180 度範圍
                             while (relativeLowerLegAngle > 180) relativeLowerLegAngle -= 360;
                             while (relativeLowerLegAngle < -180) relativeLowerLegAngle += 360;
                             
-                            // 限制膝关节角度范围 (通常膝盖只能往一个方向弯曲，约0-150度)
+                            // 限制膝關節角度範圍 (通常膝蓋只能往一個方向彎曲，約0-150度)
                             relativeLowerLegAngle = Math.max(0, Math.min(150, relativeLowerLegAngle));
                             
-                            // 应用小腿旋转
+                            // 應用小腿旋轉
                             leftLowerLeg.style.transform = `rotate(${relativeLowerLegAngle}deg)`;
                         }
                     }
                     
                     // 控制右腿
                     if (rightHip && rightKnee && rightHip.score > CONFIDENCE_THRESHOLD.MEDIUM && rightKnee.score > CONFIDENCE_THRESHOLD.MEDIUM) {
-                        // 计算向量从髋部到膝盖
+                        // 計算向量從髖部到膝蓋
                         const dx = rightKnee.x - rightHip.x;
                         const dy = rightKnee.y - rightHip.y;
                         
-                        // 计算上腿角度
+                        // 計算上腿角度
                         let rightUpperLegAngle = Math.atan2(dy, dx) * 180 / Math.PI;
                         
-                        // 适应人偶坐标系 (通常上腿垂直向下是0度)
+                        // 適應人偶坐標系 (通常上腿垂直向下是0度)
                         let adjustedLegAngle = rightUpperLegAngle - 90;
                         
-                        // 限制腿的角度范围 (-60 到 90 度)，前60度后90度
+                        // 限制腿的角度範圍 (-60 到 90 度)，前60度後90度
                         adjustedLegAngle = Math.max(-60, Math.min(90, adjustedLegAngle));
                         
-                        // 应用旋转到整个右腿容器
+                        // 應用旋轉到整個右腿容器
                         rightLegContainer.style.transform = `rotate(${adjustedLegAngle}deg)`;
                         
-                        // 控制右小腿相对于右大腿的角度
+                        // 控制右小腿相對於右大腿的角度
                         if (rightAnkle && rightAnkle.score > CONFIDENCE_THRESHOLD.MEDIUM) {
-                            // 计算向量从膝盖到脚踝
+                            // 計算向量從膝蓋到腳踝
                             const dxLowerLeg = rightAnkle.x - rightKnee.x;
                             const dyLowerLeg = rightAnkle.y - rightKnee.y;
                             
-                            // 计算小腿角度
+                            // 計算小腿角度
                             let rightLowerLegAngle = Math.atan2(dyLowerLeg, dxLowerLeg) * 180 / Math.PI;
                             
-                            // 计算小腿相对于大腿的角度差
+                            // 計算小腿相對於大腿的角度差
                             let relativeLowerLegAngle = rightLowerLegAngle - rightUpperLegAngle;
                             
-                            // 调整到 -180 到 180 度范围
+                            // 調整到 -180 到 180 度範圍
                             while (relativeLowerLegAngle > 180) relativeLowerLegAngle -= 360;
                             while (relativeLowerLegAngle < -180) relativeLowerLegAngle += 360;
                             
-                            // 限制膝关节角度范围 (通常膝盖只能往一个方向弯曲，约0-150度)
+                            // 限制膝關節角度範圍 (通常膝蓋只能往一個方向彎曲，約0-150度)
                             relativeLowerLegAngle = Math.max(0, Math.min(150, relativeLowerLegAngle));
                             
-                            // 应用小腿旋转
+                            // 應用小腿旋轉
                             rightLowerLeg.style.transform = `rotate(${relativeLowerLegAngle}deg)`;
                         }
                     }
                 }
             }
 
-            // 计算头部角度
+            // 計算頭部角度
             function calculateHeadAngle(nose, leftShoulder, rightShoulder) {
                 if (!nose || !leftShoulder || !rightShoulder) return 0;
                 
-                // 计算肩膀中点
+                // 計算肩膀中點
                 const shoulderMidpoint = {
                     x: (leftShoulder.x + rightShoulder.x) / 2,
                     y: (leftShoulder.y + rightShoulder.y) / 2
                 };
                 
-                // 计算从肩膀中点到鼻子的向量
+                // 計算從肩膀中點到鼻子的向量
                 const dx = nose.x - shoulderMidpoint.x;
                 const dy = nose.y - shoulderMidpoint.y;
                 
-                // 计算头部倾斜角度 (垂直向上为0度)
+                // 計算頭部傾斜角度 (垂直向上為0度)
                 let headAngle = Math.atan2(dx, -dy) * 180 / Math.PI;
                 
-                // 限制头部旋转范围
+                // 限制頭部旋轉範圍
                 return Math.max(-30, Math.min(30, headAngle));
             }
 
-            // 辅助函数：查找特定关键点
+            // 輔助函數：查找特定關鍵點
             function findKeypoint(keypoints, name) {
                 return keypoints.find(keypoint => keypoint.name === name);
             }
 
-            // 计算三点之间的角度（以度为单位）
+            // 計算三點之間的角度（以度為單位）
             function calculateAngle(a, b, c) {
                 const ab = Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
                 const bc = Math.sqrt(Math.pow(b.x - c.x, 2) + Math.pow(b.y - c.y, 2));
                 const ac = Math.sqrt(Math.pow(c.x - a.x, 2) + Math.pow(c.y - a.y, 2));
                 const angle = Math.acos((ab*ab + bc*bc - ac*ac) / (2 * ab * bc)) * 180 / Math.PI;
                 
-                // 确定角度的方向 (顺时针或逆时针)
+                // 確定角度的方向 (順時針或逆時針)
                 const crossProduct = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
                 return crossProduct < 0 ? 360 - angle : angle;
             }
 
-            // 事件监听器
+            // 事件監聽器
             startButton.addEventListener('click', startGame);
             stopButton.addEventListener('click', stopGame);
             showJointsCheckbox.addEventListener('change', updateJointPointsVisibility);
 
-            // 初始化应用
+            // 初始化應用
             document.addEventListener('DOMContentLoaded', init);
         </script>
   
